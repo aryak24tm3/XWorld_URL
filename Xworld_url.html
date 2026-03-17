@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X World Security & Rút Gọn Nâng Cao</title>
+    <!-- Thư viện mã hóa AES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* MÀU SẮC TRẮNG - ĐEN TỐI GIẢN */
+        :root {
+            --bg-color: #f5f5f7;
+            --surface: #ffffff;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --border: #d2d2d7;
+            --black: #000000;
+            --danger: #d63031;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
+            --warning-border: #ffeeba;
+            --x-color: #ff3b30;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; overflow-x: hidden; position: relative; }
+
+        /* HIỆU ỨNG HOA RƠI */
+        .snow-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .snowflake { position: absolute; top: -10vh; opacity: 0.8; animation: fall linear forwards; user-select: none; }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg) scale(0.8); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg) scale(1.2); opacity: 0; }
+        }
+
+        /* ICON X WORLD */
+        .x-world-icon {
+            width: 85px; height: 85px; background: linear-gradient(135deg, #111, #333);
+            border-radius: 22px; display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 20px auto; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            border: 2px solid #555; position: relative; overflow: hidden;
+        }
+        .x-world-icon::before {
+            content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+        }
+        .x-world-icon span {
+            color: #fff; font-weight: 900; font-size: 55px; font-style: italic;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.5); font-family: sans-serif;
+        }
+
+        /* MÀN HÌNH LOADING CHẤM XOAY TRÒN */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--surface); z-index: 10000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        .dot-spinner { position: relative; width: 60px; height: 60px; }
+        .dot-spinner div { transform-origin: 30px 30px; animation: dot-spinner 1.2s linear infinite; }
+        .dot-spinner div:after {
+            content: " "; display: block; position: absolute; top: 3px; left: 27px;
+            width: 6px; height: 14px; border-radius: 20%; background: var(--black);
+        }
+        .dot-spinner div:nth-child(1) { transform: rotate(0deg); animation-delay: -1.1s; }
+        .dot-spinner div:nth-child(2) { transform: rotate(30deg); animation-delay: -1s; }
+        .dot-spinner div:nth-child(3) { transform: rotate(60deg); animation-delay: -0.9s; }
+        .dot-spinner div:nth-child(4) { transform: rotate(90deg); animation-delay: -0.8s; }
+        .dot-spinner div:nth-child(5) { transform: rotate(120deg); animation-delay: -0.7s; }
+        .dot-spinner div:nth-child(6) { transform: rotate(150deg); animation-delay: -0.6s; }
+        .dot-spinner div:nth-child(7) { transform: rotate(180deg); animation-delay: -0.5s; }
+        .dot-spinner div:nth-child(8) { transform: rotate(210deg); animation-delay: -0.4s; }
+        .dot-spinner div:nth-child(9) { transform: rotate(240deg); animation-delay: -0.3s; }
+        .dot-spinner div:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2s; }
+        .dot-spinner div:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1s; }
+        .dot-spinner div:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
+        @keyframes dot-spinner { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* KHUNG HIỂN THỊ CHÍNH */
+        .view-section { display: none; width: 100%; min-height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; position: relative; z-index: 10; }
+        
+        .glass-box {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 32px; padding: 45px 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            width: 100%; max-width: 520px; text-align: center;
+            animation: scaleUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        h2.title { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: var(--text-main); letter-spacing: -0.5px; }
+        p.subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+
+        /* INPUT & BUTTON */
+        .input-group { text-align: left; margin-bottom: 25px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input {
+            width: 100%; padding: 18px 24px; background: var(--bg-color); border: 2px solid transparent;
+            border-radius: 24px; color: var(--text-main); font-size: 16px; transition: all 0.3s ease; font-weight: 500; outline: none;
+        }
+        input:focus { border-color: var(--black); background: var(--surface); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        input.center-text { text-align: center; font-size: 24px; letter-spacing: 4px; font-weight: 800; }
+
+        button {
+            width: 100%; padding: 20px; background: var(--black); color: white; border: none; border-radius: 24px;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 12px;
+        }
+        button:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+        button:active { transform: translateY(0); }
+        
+        button.btn-outline { background: transparent; color: var(--black); border: 2px solid var(--border); margin-top: 15px; }
+        button.btn-outline:hover { background: var(--bg-color); border-color: var(--black); box-shadow: none; }
+
+        /* QUY ĐỊNH BẢO MẬT */
+        .rules-box {
+            background: var(--warning-bg); border: 1px solid var(--warning-border);
+            border-left: 5px solid #ffc107; padding: 20px; text-align: left; 
+            border-radius: 16px; margin-bottom: 30px; font-size: 14px; color: var(--warning-text);
+        }
+        .rules-box ul { margin-left: 20px; margin-top: 10px; line-height: 1.7; }
+        .rules-box li { margin-bottom: 5px; }
+
+        /* GỢI Ý & KẾT QUẢ (ADMIN) */
+        .result-box { margin-top: 30px; padding: 25px; background: #fafafa; border: 1px solid var(--border); border-radius: 24px; display: none; animation: scaleUp 0.4s ease; }
+
+        /* MÃ XÁC MINH (GET CODE PAGE) */
+        .code-display { font-size: 45px; font-weight: 800; color: var(--text-main); letter-spacing: 12px; margin: 25px 0; background: #f5f5f7; padding: 20px; border-radius: 24px; border: 1px dashed #ccc; }
+        .timer { font-size: 70px; font-weight: 800; color: var(--text-main); margin: 15px 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+
+        /* BÀI VIẾT RANDOM (GET CODE PAGE) */
+        .fake-article { width: 100%; max-width: 800px; margin: 0 auto 50px auto; padding: 30px; background: #fff; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+        .fake-article h1 { font-size: 32px; margin-bottom: 20px; font-weight: 800; color: #111; line-height: 1.3;}
+        .fake-article p { font-size: 17px; line-height: 1.8; color: #444; margin-bottom: 20px; text-align: justify; }
+        .fake-article img { width: 100%; border-radius: 15px; margin-bottom: 20px; }
+
+    </style>
+</head>
+<body>
+
+<!-- LOADER CHẤM XOAY TRÒN -->
+<div id="global-loader">
+    <div class="dot-spinner">
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <p id="loader-text" style="margin-top: 25px; font-weight: 700; color: var(--text-muted); font-size: 14px; letter-spacing: 2px;">ĐANG KIỂM TRA BẢO MẬT...</p>
+</div>
+
+<!-- ==========================================
+     GIAO DIỆN 1: TẠO LINK (ADMIN)
+     ========================================== -->
+<div id="admin-view" class="view-section">
+    <div class="glass-box">
+        <div class="x-world-icon"><span>X</span></div>
+        <h2 class="title">X World Security</h2>
+        <p class="subtitle">Đóng gói liên kết và tự động tạo luồng xác minh độc nhất chống Spam/VPN.</p>
+        
+        <div class="input-group">
+            <label>Đường dẫn đích (URL gốc)</label>
+            <input type="url" id="long-url" placeholder="https://..." required>
+        </div>
+
+        <button onclick="generateLink()"><i class="fa-solid fa-lock"></i> Mã Hóa Ngay</button>
+
+        <div class="result-box" id="result-box">
+            <p style="font-weight: 800; color: #111; font-size: 15px; margin-bottom: 15px;"><i class="fa-solid fa-check"></i> ĐÃ TẠO THÀNH CÔNG</p>
+            <input type="text" id="short-url" readonly style="font-size: 14px; text-align: center; background: white; border: 1px solid var(--border);">
+            <button class="btn-outline" onclick="copyText('short-url', this)"><i class="fa-regular fa-copy"></i> Sao Chép Link Rút Gọn</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     GIAO DIỆN 2: TRANG NHẬP MÃ (KHÁCH TRUY CẬP)
+     ========================================== -->
+<div id="unlock-view" class="view-section">
+    <div class="glass-box" style="border: 2px solid var(--black);">
+        <div class="x-world-icon"><span>X</span></div>
+        <h2 class="title">Xác Minh X World</h2>
+        <p class="subtitle">Hệ thống yêu cầu bạn tự động lấy mã bảo mật. Tuyệt đối không dùng mã chia sẻ.</p>
+        
+        <div class="rules-box">
+            <strong style="display:block; font-size: 13px; color: #d35400; text-transform: uppercase;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Quy định bảo mật hệ thống:
+            </strong>
+            <ul>
+                <li>Nghiêm cấm chia sẻ mã cho người khác. Máy bạn lấy mã mới dùng được mã.</li>
+                <li>Không sử dụng <b>VPN, Proxy</b> hoặc ứng dụng <b>1.1.1.1 (WARP)</b>.</li>
+                <li><b>Nhập sai quá 3 lần:</b> Khóa IP vĩnh viễn khỏi toàn bộ hệ thống.</li>
+            </ul>
+        </div>
+
+        <input type="number" id="user-code" class="center-text" placeholder="Nhập 6 số..." oninput="if(this.value.length > 6) this.value = this.value.slice(0,6);">
+        
+        <button onclick="verifyCode()"><i class="fa-solid fa-key"></i> Xác Nhận Mở Khóa</button>
+        
+        <button class="btn-outline" onclick="openGetCodePage()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Chuyển Sang Trang Lấy Mã</button>
+
+        <p id="error-msg" style="display:none; color: var(--danger); font-weight: 700; margin-top: 25px; font-size: 15px;"></p>
+    </div>
+</div>
+
+<!-- ==========================================
+     GIAO DIỆN 3: TRANG ĐỢI (ÉP CUỘN XUỐNG ĐÁY)
+     ========================================== -->
+<div id="getcode-view" class="view-section" style="justify-content: flex-start; padding-top: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 30px; width: 100%;">
+        <div class="x-world-icon" style="width: 60px; height: 60px; margin-bottom: 10px;">
+            <span style="font-size: 35px;">X</span>
+        </div>
+        <h2 class="title" style="font-size: 30px;"><i class="fa-solid fa-angles-down"></i> Vui lòng cuộn xuống cuối trang</h2>
+        <p class="subtitle">Đọc nội dung bên dưới và lấy mã bảo mật ở dưới cùng.</p>
+    </div>
+
+    <!-- KHỐI BÀI VIẾT RANDOM -->
+    <div id="fake-content-container" class="fake-article"></div>
+
+    <!-- KHU VỰC NÚT LẤY MÃ -->
+    <div class="glass-box" id="bottom-action-area" style="margin-bottom: 100px;">
+        <div id="start-btn-box">
+            <h2 class="title">Khu Vực Lấy Mã</h2>
+            <p class="subtitle">Bạn đã đọc xong bài viết. Hãy bấm nút dưới để lấy mã.</p>
+            <button onclick="startCountdown()"><i class="fa-solid fa-play"></i> Bắt Đầu Nhận Mã</button>
+        </div>
+
+        <div id="waiting-box" style="display: none;">
+            <div class="dot-spinner" style="margin: 0 auto 20px auto; width: 40px; height: 40px;">
+                <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <h2 class="title">Đang Giải Mã...</h2>
+            <div class="timer" id="countdown-text">--</div>
+            <p class="subtitle">Vui lòng không đóng trang web này.</p>
+        </div>
+
+        <div id="final-code-box" style="display: none;">
+            <p style="font-size: 14px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">MÃ CỦA BẠN LÀ:</p>
+            <div class="code-display" id="show-actual-code">------</div>
+            <input type="text" id="hidden-code-input" style="position: absolute; left: -9999px;">
+            <button onclick="copyText('hidden-code-input', this)"><i class="fa-solid fa-copy"></i> Sao Chép Mã</button>
+            <p style="font-size: 14px; margin-top: 20px; font-weight: 500;">Hãy quay lại trang trước và dán mã này vào ô xác nhận nhé!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       1. CẤU HÌNH & KHỞI TẠO
+       ========================================= */
+    const SYSTEM_SECRET_KEY = "XWorld_Security_2024_Pro"; 
+    const MAX_ATTEMPTS = 3;
+    let encryptedUrlData = "";
+    let encryptedCodeData = "";
+    let urlForGetCode = "";
+    let userIP = "Unknown";
+
+    // HIỆU ỨNG HOA RƠI CHẠY NGẦM
+    function createFallingFlowers() {
+        const container = document.createElement('div');
+        container.className = 'snow-container';
+        document.body.appendChild(container);
+
+        const flowers = ['🌸', '🌺', '🌼', '✨']; // Biểu tượng hoa rơi
+
+        setInterval(() => {
+            const petal = document.createElement('div');
+            petal.className = 'snowflake';
+            petal.innerText = flowers[Math.floor(Math.random() * flowers.length)];
+            petal.style.left = Math.random() * 100 + 'vw';
+            petal.style.animationDuration = Math.random() * 3 + 4 + 's'; // Rơi từ 4-7 giây
+            petal.style.fontSize = Math.random() * 10 + 15 + 'px'; // Size từ 15-25px
+            container.appendChild(petal);
+            
+            // Xóa đi để không nặng máy
+            setTimeout(() => { petal.remove(); }, 7000);
+        }, 400); // Tốc độ ra hoa
+    }
+
+    window.onload = async function() {
+        createFallingFlowers(); // Kích hoạt hoa rơi
+
+        const isSafe = await checkSecurityIP();
+        if(isSafe) {
+            document.getElementById('global-loader').style.opacity = '0';
+            setTimeout(() => { document.getElementById('global-loader').style.display = 'none'; }, 500);
+            
+            generateRandomArticle(); // Tạo bài viết random
+            initApp(); 
+        }
+    };
+
+    /* Chống F12 (Cơ bản) */
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) { if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 67 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false; }
+
+    /* KIỂM TRA IP - CHẶN VPN / SPAM */
+    async function checkSecurityIP() {
+        try {
+            let res = await fetch('https://ipapi.co/json/');
+            let data = await res.json();
+            userIP = data.ip || "Unknown";
+            let org = (data.org || "").toLowerCase();
+
+            if (org.includes("cloudflare") || org.includes("warp") || org.includes("vpn") || org.includes("proxy") || org.includes("hosting")) {
+                showBanScreen("Phát hiện kết nối VPN / WARP 1.1.1.1. Vui lòng tắt phần mềm đổi IP và tải lại trang!");
+                return false;
+            }
+            if(localStorage.getItem(`banned_ip_${userIP}`)) {
+                showBanScreen("Thiết bị của bạn đã bị KHÓA vĩnh viễn do nhập sai mã quá giới hạn!");
+                return false;
+            }
+            return true;
+        } catch(e) { return true; }
+    }
+
+    function showBanScreen(reason) {
+        document.body.innerHTML = `
+            <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; padding: 30px; text-align: center;">
+                <div class="x-world-icon" style="margin-bottom: 20px;"><span>X</span></div>
+                <h2 style="color: #111; font-weight: 900; font-size: 30px; margin-bottom: 15px;">TRUY CẬP BỊ TỪ CHỐI</h2>
+                <p style="color: #d35400; font-size: 16px; font-weight: 600; max-width: 500px; line-height: 1.6;">${reason}</p>
+            </div>
+        `;
+    }
+
+    /* =========================================
+       2. TẠO BÀI VIẾT RANDOM KHÔNG ĐỤNG HÀNG
+       ========================================= */
+    const dbArticles = [
+        {
+            title: "Khám Phá Hệ Sinh Thái X World Mới Nhất",
+            desc: "X World không chỉ là một ứng dụng, mà là một trải nghiệm Web3 kết hợp giải trí, giúp người dùng vừa chơi game vừa kiếm phần thưởng mỗi ngày."
+        },
+        {
+            title: "Bí Quyết Tối Ưu Hóa Thu Nhập Trên Nền Tảng GameFi",
+            desc: "GameFi đang thống trị thị trường mã hóa. Việc sử dụng quỹ thời gian hợp lý để làm nhiệm vụ sẽ giúp bạn gia tăng tốc độ khai thác tối đa."
+        },
+        {
+            title: "Tại Sao Bảo Mật Chống Chia Sẻ Mã Lại Quan Trọng?",
+            desc: "Để đảm bảo công bằng cho hệ sinh thái, hệ thống sẽ từ chối các phiên bản bot, auto click hoặc hành vi nhờ người khác lấy mã hộ."
+        },
+        {
+            title: "Tương Lai Của Công Nghệ Blockchain Và AI",
+            desc: "Sự kết hợp giữa Trí tuệ nhân tạo (AI) và Blockchain (Web3) đang mở ra những cánh cửa mới cho việc bảo mật dữ liệu phi tập trung."
+        }
+    ];
+
+    function generateRandomArticle() {
+        const container = document.getElementById('fake-content-container');
+        // Chọn ngẫu nhiên 1 chủ đề
+        const article = dbArticles[Math.floor(Math.random() * dbArticles.length)];
+        
+        // Tạo các đoạn văn bản ngẫu nhiên cho dài trang
+        const phrases = [
+            "Công nghệ hiện đại đang phát triển với tốc độ chóng mặt.",
+            "Hãy đảm bảo bạn luôn cập nhật ứng dụng lên phiên bản mới nhất.",
+            "X World tạo ra một môi trường an toàn và minh bạch cho mọi thành viên.",
+            "Phần thưởng sẽ tự động được cộng vào ví của bạn sau khi hoàn thành nhiệm vụ.",
+            "Chúng tôi khuyến khích người dùng không sử dụng phần mềm thứ 3 can thiệp vào hệ thống.",
+            "Mỗi người dùng đều đóng góp một phần quan trọng vào sự phát triển của cộng đồng.",
+            "Bảo mật tài khoản bằng mật khẩu mạnh và mã xác thực 2 lớp là điều vô cùng cần thiết.",
+            "Đừng quên mời bạn bè để nhận thêm vô vàn quà tặng hấp dẫn mỗi dịp sự kiện diễn ra."
+        ];
+
+        let bodyText = "";
+        for(let i = 0; i < 8; i++) {
+            let paragraph = "";
+            for(let j=0; j<6; j++) { // Mỗi đoạn 6 câu
+                paragraph += phrases[Math.floor(Math.random() * phrases.length)] + " ";
+            }
+            bodyText += `<p>${paragraph}</p>`;
+        }
+
+        container.innerHTML = `
+            <h1>${article.title}</h1>
+            <p style="font-weight: 700; color: #111;">${article.desc}</p>
+            ${bodyText}
+            <div style="background: #f5f5f7; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #111;">
+                <strong>Lưu ý:</strong> Vui lòng tiếp tục cuộn xuống để xác nhận bạn đã đọc và nhận mã bảo mật của mình.
+            </div>
+        `;
+    }
+
+    /* =========================================
+       3. LOGIC HỆ THỐNG RÚT GỌN / XÁC NHẬN
+       ========================================= */
+    function initApp() {
+        const hashData = window.location.hash.substring(1);
+        document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
+
+        if (!hashData) {
+            document.getElementById('admin-view').style.display = 'flex';
+        } 
+        else if (hashData.startsWith('unlock.')) {
+            const parts = hashData.split(".");
+            if(parts.length >= 3) {
+                encryptedUrlData = decodeURIComponent(parts[1]);
+                encryptedCodeData = decodeURIComponent(parts[2]);
+                
+                document.getElementById('unlock-view').style.display = 'flex';
+                const baseUrl = window.location.href.split('#')[0];
+                urlForGetCode = baseUrl + '#getcode.' + encodeURIComponent(encryptedCodeData);
+            }
+        }
+        else if (hashData.startsWith('getcode.')) {
+            const parts = hashData.split(".");
+            if(parts.length >= 2) {
+                encryptedCodeData = decodeURIComponent(parts[1]);
+                document.getElementById('getcode-view').style.display = 'flex';
+            }
+        }
+    }
+
+    /* --- HÀM TẠO LINK (ADMIN) --- */
+    function generateLink() {
+        const url = document.getElementById('long-url').value;
+        if (!url || !url.startsWith('http')) { alert("Vui lòng nhập Link gốc hợp lệ!"); return; }
+
+        // Code random độc nhất mỗi lần bấm
+        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const encUrl = CryptoJS.AES.encrypt(url, randomCode).toString();
+        const encCode = CryptoJS.AES.encrypt(randomCode, SYSTEM_SECRET_KEY).toString();
+        
+        const payload = `unlock.${encodeURIComponent(encUrl)}.${encodeURIComponent(encCode)}`;
+        const baseUrl = window.location.href.split('#')[0];
+        
+        document.getElementById('short-url').value = baseUrl + '#' + payload;
+        document.getElementById('result-box').style.display = 'block';
+    }
+
+    /* --- CHUYỂN TAB (KHÁCH) --- */
+    function openGetCodePage() {
+        if(urlForGetCode) window.open(urlForGetCode, '_blank');
+    }
+
+    /* --- NÚT BẤM CUỐI TRANG -> ĐẾM NGƯỢC THỜI GIAN --- */
+    function startCountdown() {
+        document.getElementById('start-btn-box').style.display = 'none';
+        document.getElementById('waiting-box').style.display = 'block';
+
+        let timeLeft = Math.floor(Math.random() * (75 - 45 + 1)) + 45; // Đợi từ 45s đến 75s
+        const timerElement = document.getElementById('countdown-text');
+        timerElement.innerText = timeLeft;
+
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            timerElement.innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('waiting-box').style.display = 'none';
+                
+                try {
+                    const bytes = CryptoJS.AES.decrypt(encryptedCodeData, SYSTEM_SECRET_KEY);
+                    const actualCode = bytes.toString(CryptoJS.enc.Utf8);
+                    
+                    document.getElementById('show-actual-code').innerText = actualCode;
+                    document.getElementById('hidden-code-input').value = actualCode; 
+                    document.getElementById('final-code-box').style.display = 'block';
+
+                    // === CHỐNG CHIA SẺ MÃ: Cấp Token ẩn cho trình duyệt đã chờ hết giờ ===
+                    localStorage.setItem(`token_${actualCode}`, "verified_by_this_device");
+
+                } catch(e) { alert("Dữ liệu liên kết bị lỗi!"); }
+            }
+        }, 1000);
+    }
+
+    /* --- XÁC NHẬN MÃ (CHỐNG CHIA SẺ) --- */
+    function verifyCode() {
+        if(localStorage.getItem(`banned_ip_${userIP}`)) {
+            showBanScreen("Thiết bị của bạn đã bị KHÓA vĩnh viễn!"); return;
+        }
+
+        const userCode = document.getElementById('user-code').value;
+        const errorMsg = document.getElementById('error-msg');
+        
+        if(userCode.length !== 6) {
+            errorMsg.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> Vui lòng nhập đủ 6 số!";
+            errorMsg.style.display = 'block'; return;
+        }
+
+        // === BẮT BUỘC MÁY PHẢI TỰ LẤY MÃ (Check Token) ===
+        if(!localStorage.getItem(`token_${userCode}`)) {
+            errorMsg.innerHTML = "<i class='fa-solid fa-ban'></i> LỖI CHIA SẺ MÃ: Bạn chưa tự vượt link để lấy mã, hoặc bạn đang dùng mã copy từ người khác. Yêu cầu tự bấm nút Lấy mã!";
+            errorMsg.style.display = 'block';
+            
+            // Hiệu ứng rung
+            const input = document.getElementById('user-code');
+            input.style.border = '2px solid var(--danger)';
+            input.style.transform = 'translateX(-10px)';
+            setTimeout(() => input.style.transform = 'translateX(10px)', 100);
+            setTimeout(() => input.style.transform = 'translateX(0)', 200);
+            setTimeout(() => input.style.border = '2px solid transparent', 2000);
+            return;
+        }
+
+        errorMsg.style.display = 'none';
+
+        try {
+            const decryptedBytes = CryptoJS.AES.decrypt(encryptedUrlData, userCode);
+            const originalUrl = decryptedBytes.toString(CryptoJS.enc.Utf8);
+
+            if (originalUrl && originalUrl.startsWith("http")) {
+                localStorage.removeItem(`fails_ip_${userIP}`);
+                // Hủy Token ngay khi dùng xong để tránh dùng lại vô hạn
+                localStorage.removeItem(`token_${userCode}`); 
+                
+                document.getElementById('unlock-view').style.opacity = '0.5';
+                document.body.innerHTML += `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <div class="x-world-icon" style="width: 70px; height: 70px; margin-bottom: 20px;"><span>X</span></div>
+                    <div class="dot-spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+                    <h2 style="margin-top:20px; font-weight:800; color:#111;">Xác thực thành công. Đang chuyển hướng...</h2>
+                </div>`;
+                setTimeout(() => { window.location.replace(originalUrl); }, 1500);
+            } else { throw new Error("Wrong Password"); }
+        } catch (e) {
+            let currentFails = parseInt(localStorage.getItem(`fails_ip_${userIP}`) || "0") + 1;
+            localStorage.setItem(`fails_ip_${userIP}`, currentFails);
+
+            if(currentFails >= MAX_ATTEMPTS) {
+                localStorage.setItem(`banned_ip_${userIP}`, "true"); 
+                showBanScreen("Thiết bị của bạn đã bị KHÓA do nhập sai mã quá 3 lần!");
+                return;
+            }
+
+            errorMsg.innerHTML = `<i class='fa-solid fa-circle-xmark'></i> Mã sai! Bạn còn ${MAX_ATTEMPTS - currentFails} lần thử trước khi bị khóa.`;
+            errorMsg.style.display = 'block';
+            
+            const input = document.getElementById('user-code');
+            input.style.border = '2px solid var(--danger)';
+            input.style.transform = 'translateX(-10px)';
+            setTimeout(() => input.style.transform = 'translateX(10px)', 100);
+            setTimeout(() => input.style.transform = 'translateX(0)', 200);
+            setTimeout(() => input.style.border = '2px solid transparent', 2000);
+        }
+    }
+
+    /* --- HÀM COPY CHUNG --- */
+    function copyText(inputId, btnElement) {
+        const copyText = document.getElementById(inputId);
+        copyText.select(); copyText.setSelectionRange(0, 99999); 
+        document.execCommand("copy");
+        
+        const oldHtml = btnElement.innerHTML;
+        btnElement.innerHTML = "<i class='fa-solid fa-check-double'></i> Đã Sao Chép";
+        btnElement.style.background = "#000"; 
+        
+        setTimeout(() => { btnElement.innerHTML = oldHtml; }, 2000);
+    }
+</script>
+
+</body>
+</html>
